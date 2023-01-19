@@ -34,7 +34,7 @@ module.exports = {
       booking_number_of_rooms: {
         type: Sequelize.INTEGER
       },
-      booking_room_type_id: {
+      room_type_id: {
         type: Sequelize.INTEGER,
         references: {
           model: "room_type",
@@ -45,7 +45,7 @@ module.exports = {
         type: Sequelize.ENUM,
         values: ['new', 'check_in', 'check_out']
       },
-      booking_user_id: {
+      user_id: {
         type: Sequelize.INTEGER,
         references: {
           model: "user",

@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
       })
 
       this.belongsTo(models.user, {
-        foreignKey: "user",
+        foreignKey: "user_id",
         as: "user"
       })
 
@@ -42,9 +42,9 @@ module.exports = (sequelize, DataTypes) => {
     booking_check_out_date: DataTypes.DATE,
     booking_guest_name: DataTypes.STRING,
     booking_number_of_rooms: DataTypes.INTEGER,
-    booking_room_type_id: DataTypes.INTEGER,
-    booking_status: DataTypes.ENUM,
-    booking_user_id: DataTypes.INTEGER
+    room_type_id: DataTypes.INTEGER,
+    booking_status: DataTypes.ENUM('new', 'check_in', 'check_out'),
+    user_id: DataTypes.INTEGER
   }, {
     sequelize,
     modelName: 'booking',

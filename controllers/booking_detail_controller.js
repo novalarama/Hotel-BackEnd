@@ -1,4 +1,4 @@
-const roomTypeModel = require("../models/index").room_type;
+const bookingDetailModel = require("../models/index").booking_detail;
 
 const path = require(`path`);
 const fs = require(`fs`);
@@ -7,8 +7,8 @@ const fs = require(`fs`);
 const sequelize = require(`sequelize`);
 const operator = sequelize.Op;
 
-exports.getDataRoomType = (request, response) => {
-  roomTypeModel
+exports.getDataBookingDetail = (request, response) => {
+  bookingDetailModel
     .findAll()
     .then((result) => {
       return response.json({ count: result.length, data: result });
