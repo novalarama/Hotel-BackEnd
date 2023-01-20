@@ -30,7 +30,6 @@ exports.findRoomData = async (request, response) => {
       where: {
         [operator.or]: {
           room_number: { [operator.like]: `%${keyword}%` },
-          room_id: { [operator.like]: `%${keyword}%` },
           room_is_available: { [operator.like]: `%${keyword}%` },
         },
       },
@@ -47,7 +46,7 @@ exports.addRoomData = async (request, response) => {
   // request data
   let requestData = {
     room_number: request.body.room_number,
-    room_id: request.body.room_id,
+    room_type_id: request.body.room_type_id,
     room_is_available: request.body.room_is_available,
   };
 
@@ -76,7 +75,7 @@ exports.updateRoomData = async (request, response) => {
 
   let requestData = {
     room_number: request.body.room_number,
-    room_id: request.body.room_id,
+    room_type_id: request.body.room_type_id,
     room_is_available: request.body.room_is_available,
   };
 

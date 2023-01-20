@@ -1,7 +1,6 @@
 const multer = require("multer") // memanggil library multer
 const path = require("path")
 const fs = require("fs")
-const { request } = require("http")
 
 const storage = multer.diskStorage({
     destination: (request, file, callback) => {

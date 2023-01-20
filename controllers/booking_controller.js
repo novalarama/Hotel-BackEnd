@@ -1,4 +1,7 @@
 const bookingModel = require("../models/index").booking;
+const bookingDetailModel = require("../models/index").booking_detail;
+const roomModel = require("../models/index").room;
+const roomTypeModel = require("../models/index").room_type;
 
 // import sequelize operator
 const sequelize = require(`sequelize`);
@@ -7,10 +10,7 @@ const operator = sequelize.Op;
 exports.getBookingData = async (request, response) => {
   await bookingModel
     .findAll({
-      include: [
-        "room_type",
-        "user"
-      ]
+      include: ["room_type", "user"],
     })
     .then((result) => {
       return response.json({ count: result.length, data: result });
@@ -27,10 +27,7 @@ exports.findBookingData = async (request, response) => {
 
   await bookingModel
     .findAll({
-      include: [
-        "room_type",
-        "user"
-      ],
+      include: ["room_type", "user"],
       where: {
         [operator.or]: {
           booking_number: { [operator.like]: `%${keyword}%` },
@@ -38,7 +35,9 @@ exports.findBookingData = async (request, response) => {
           booking_email: { [operator.like]: `%${keyword}%` },
           booking_guest_name: { [operator.like]: `%${keyword}%` },
         },
-        booking_check_in_date: {[operator.between]:[bookingCheckInDate, bookingCheckOutDate]}
+        booking_check_in_date: {
+          [operator.between]: [bookingCheckInDate, bookingCheckOutDate],
+        },
       },
     })
     .then((result) => {
@@ -62,12 +61,59 @@ exports.addBookingData = async (request, response) => {
     booking_number_of_rooms: request.body.booking_number_of_rooms,
     room_type_id: request.body.room_type_id,
     booking_status: request.body.booking_status,
-    user_id: request.body.user_id
+    user_id: request.body.user_id,
   };
 
+  let roomsData = await roomModel.findAll({
+    where: {
+      room_type_id: requestData.room_type_id,
+      room_is_available: true,
+    },
+  });
+
+  if (roomsData == null || roomsData.length < requestData.booking_number_of_rooms) {
+    return response.json({
+      message: "Data not found!",
+    });
+  } else {
   await bookingModel
     .create(requestData)
-    .then((result) => {
+    .then(async (result) => {
+      // change status room
+
+      let roomTypeData = await roomTypeModel.findOne({
+        where: { room_type_id: requestData.room_type_id },
+      });
+
+      let roomsDataSelected = [];
+
+        for (let i = 0; i < roomsData.length; i++) {
+          roomsDataSelected.push(roomsData[i]);
+          roomModel.update(
+            { room_is_available: false },
+            { where: { room_id: roomsData[i].room_id } }
+          );
+        }
+
+        // process to add booking detail
+        let checkInDate = new Date(requestData.booking_check_in_date);
+        let checkOutDate = new Date(requestData.booking_check_out_date);
+        let dayTotal =
+          (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 3600 * 24);
+
+        for (let i = 0; i < dayTotal; i++) {
+          for (let j = 0; j < roomsDataSelected.length; j++) {
+            let accessDate = new Date(checkInDate);
+            accessDate.setDate(accessDate.getDate() + i);
+            let requestDataDetail = {
+              booking_id: result.booking_id,
+              room_id: roomsDataSelected[j].room_id,
+              access_date: accessDate,
+              price: roomTypeData.room_type_price,
+            };
+            await bookingDetailModel.create(requestDataDetail);
+          }
+        }
       return response.json({
         statusCode: response.statusCode,
         message: "New user has been created",
@@ -78,6 +124,7 @@ exports.addBookingData = async (request, response) => {
         message: error.message,
       });
     });
+  }
 };
 
 exports.updateBookingData = async (request, response) => {
@@ -105,7 +152,7 @@ exports.updateBookingData = async (request, response) => {
     booking_number_of_rooms: request.body.booking_number_of_rooms,
     room_type_id: request.body.room_type_id,
     booking_status: request.body.booking_status,
-    user_id: request.body.user_id
+    user_id: request.body.user_id,
   };
 
   await bookingModel
@@ -137,9 +184,16 @@ exports.deleteBookingData = async (request, response) => {
     });
   }
 
+  //delete booking detail
+  await bookingDetailModel.destroy({ where: { booking_id: bookingId } });
+
   bookingModel
     .destroy({ where: { booking_id: bookingId } })
-    .then((result) => {
+    .then(async (result) => {
+      //get data detail for check before update
+      let bookingDataDetail = await bookingModel.findAll({
+        where: { booking_id: bookingId },
+      });
       return response.json({
         statusCode: response.statusCode,
         message: "Data user has been deleted",
