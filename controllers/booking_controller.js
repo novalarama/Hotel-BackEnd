@@ -64,6 +64,7 @@ exports.addBookingData = async (request, response) => {
     user_id: request.body.user_id,
   };
 
+  // get data room where room is available and for check the data isn't null
   let roomsData = await roomModel.findAll({
     where: {
       room_type_id: requestData.room_type_id,
@@ -71,22 +72,25 @@ exports.addBookingData = async (request, response) => {
     },
   });
 
+
+  // process add detail
   if (roomsData == null || roomsData.length < requestData.booking_number_of_rooms) {
     return response.json({
       message: "Data not found!",
     });
   } else {
-  await bookingModel
-    .create(requestData)
-    .then(async (result) => {
-      // change status room
+    await bookingModel
+      .create(requestData)
+      .then(async (result) => {
+        // change status room
 
-      let roomTypeData = await roomTypeModel.findOne({
-        where: { room_type_id: requestData.room_type_id },
-      });
+        let roomTypeData = await roomTypeModel.findOne({
+          where: { room_type_id: requestData.room_type_id },
+        });
 
-      let roomsDataSelected = [];
+        let roomsDataSelected = [];
 
+        // process add data room where status is available to one list
         for (let i = 0; i < roomsData.length; i++) {
           roomsDataSelected.push(roomsData[i]);
           roomModel.update(
@@ -114,67 +118,25 @@ exports.addBookingData = async (request, response) => {
             await bookingDetailModel.create(requestDataDetail);
           }
         }
-      return response.json({
-        statusCode: response.statusCode,
-        message: "New user has been created",
+        return response.json({
+          data: roomsDataSelected,
+          statusCode: response.statusCode,
+          message: "New user has been created",
+        });
+      })
+      .catch((error) => {
+        return response.json({
+          message: error.message,
+        });
       });
-    })
-    .catch((error) => {
-      return response.json({
-        message: error.message,
-      });
-    });
   }
-};
-
-exports.updateBookingData = async (request, response) => {
-  //get booking_id
-  let bookingId = request.params.booking_id;
-
-  //get data for check before update
-  let BookingData = await bookingModel.findOne({
-    where: { booking_id: bookingId },
-  });
-  if (BookingData == null) {
-    return response.json({
-      message: "Data Not Found!",
-    });
-  }
-
-  let requestData = {
-    booking_number: request.body.booking_number,
-    booking_name: request.body.booking_name,
-    booking_email: request.body.booking_email,
-    booking_date: request.body.booking_date,
-    booking_check_in_date: request.body.booking_check_in_date,
-    booking_check_out_date: request.body.booking_check_out_date,
-    booking_guest_name: request.body.booking_guest_name,
-    booking_number_of_rooms: request.body.booking_number_of_rooms,
-    room_type_id: request.body.room_type_id,
-    booking_status: request.body.booking_status,
-    user_id: request.body.user_id,
-  };
-
-  await bookingModel
-    .update(requestData, { where: { booking_id: bookingId } })
-    .then((result) => {
-      return response.json({
-        statusCode: response.statusCode,
-        message: "Data user has been updated",
-      });
-    })
-    .catch((error) => {
-      return response.json({
-        message: error.message,
-      });
-    });
 };
 
 exports.deleteBookingData = async (request, response) => {
   //get user id
   let bookingId = request.params.booking_id;
 
-  //get data for check before update
+  //get data booking for check before update
   let BookingData = await bookingModel.findOne({
     where: { booking_id: bookingId },
   });
@@ -182,6 +144,18 @@ exports.deleteBookingData = async (request, response) => {
     return response.json({
       message: "Data Not Found!",
     });
+  }
+
+  // change status room_is_available to true
+  let allBookingDetailData = await bookingDetailModel.findAll({
+    where: { booking_id: bookingId },
+  });
+
+  for (let i = 0; i < allBookingDetailData.length; i++) {
+    await roomModel.update(
+      { room_is_available: true },
+      {where: { room_id: allBookingDetailData[i].room_id },}
+    );
   }
 
   //delete booking detail
@@ -190,10 +164,6 @@ exports.deleteBookingData = async (request, response) => {
   bookingModel
     .destroy({ where: { booking_id: bookingId } })
     .then(async (result) => {
-      //get data detail for check before update
-      let bookingDataDetail = await bookingModel.findAll({
-        where: { booking_id: bookingId },
-      });
       return response.json({
         statusCode: response.statusCode,
         message: "Data user has been deleted",

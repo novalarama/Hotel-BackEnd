@@ -15,9 +15,6 @@ app.get("/", bookingController.getBookingData)
 // post data room
 app.post("/", bookingController.addBookingData)
 
-//update data room
-app.put("/:booking_id", bookingController.updateBookingData)
-
 //delete data room
 app.delete("/:booking_id", bookingController.deleteBookingData)
 
