@@ -8,20 +8,25 @@ const userController = require("../controllers/user_controller")
 
 //connect middleware
 const uploadImage = require("../middlewares/uploadImage")
+const authorization = require("../middlewares/authorization")
+const userValidator = require("../middlewares/userValidator")
+
+// for authentication
+app.post("/auth", userController.authentication)
 
 // find data type room
-app.post("/find", userController.findUserData)
+app.post("/find", [authorization.authorization], userController.findUserData)
 
 // get data type room
-app.get("/", userController.getUserData)
+app.get("/", [authorization.authorization], userController.getUserData)
 
 // post data type room
-app.post("/", [uploadImage.upload.single(`user_photo`)], userController.addUserData)
+app.post("/", [userValidator.validate, uploadImage.upload.single(`user_photo`), authorization.authorization], userController.addUserData)
 
 //update data type room
-app.put("/:user_id", [uploadImage.upload.single(`user_photo`)], userController.updateUserData)
+app.put("/:user_id", [userValidator.validate, uploadImage.upload.single(`user_photo`), authorization.authorization], userController.updateUserData)
 
 //delete data room type
-app.delete("/:user_id", userController.deleteUserData)
+app.delete("/:user_id", [authorization.authorization], userController.deleteUserData)
 
 module.exports = app

@@ -1,4 +1,6 @@
 const md5 = require("md5");
+const jwt = require(`jsonwebtoken`)
+const{validationResult} = require(`express-validator`)
 const userModel = require("../models/index").user;
 
 const path = require(`path`);
@@ -40,6 +42,10 @@ exports.findUserData = async (request, response) => {
 };
 
 exports.addUserData = async (request, response) => {
+  let checkValidation = validationResult(request)
+  if(!checkValidation.isEmpty()){
+    return response.json(checkValidation.array())
+  }
   // handle upload photo
   console.log();
   if (!request.file) {
@@ -74,6 +80,11 @@ exports.addUserData = async (request, response) => {
 exports.updateUserData = async (request, response) => {
   //get user_id
   let userId = request.params.user_id;
+
+  let checkValidation = validationResult(request)
+  if(!checkValidation.isEmpty()){
+    return response.json(checkValidation.array())
+  }
 
   //get data for check before update
   let userData = await userModel.findOne({
@@ -156,3 +167,31 @@ exports.deleteUserData = async (request, response) => {
       });
     });
 };
+
+exports.authentication = async(request, response) => {
+  let requestData = {
+      user_name : request.body.user_name,
+      user_password : md5(request.body.user_password)
+  }
+
+  // validasi
+  let result = await userModel.findOne({where : requestData})
+
+  if (result) {
+      let payload = JSON.stringify(result)
+      let secretKey = `ukk-hotel`
+
+      // generate token
+      let token = jwt.sign(payload, secretKey)
+      return response.json({
+          logged: true,
+          token: token,
+          data : result
+      })
+  } else {
+      return response.json({
+          logged: false,
+          message : `Invalid Username or Password, Please Try Again!`
+      })
+  }
+}
