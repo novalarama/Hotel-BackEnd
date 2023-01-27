@@ -1,16 +1,18 @@
 const bookingDetailModel = require("../models/index").booking_detail;
+const roomModel = require("../models/index").room;
 
 // import sequelize operator
 const sequelize = require(`sequelize`);
 const operator = sequelize.Op;
 
+
 exports.getBookingDetailData = async (request, response) => {
   await bookingDetailModel
     .findAll({
-      include: [
-        "booking",
-        "room",
-      ]
+      // include: [
+      //   "booking",
+      //   "room",
+      // ]
     })
     .then((result) => {
       return response.json({ count: result.length, data: result });

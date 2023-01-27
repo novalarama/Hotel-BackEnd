@@ -2,6 +2,7 @@ const bookingModel = require("../models/index").booking;
 const bookingDetailModel = require("../models/index").booking_detail;
 const roomModel = require("../models/index").room;
 const roomTypeModel = require("../models/index").room_type;
+const userModel = require("../models/index").user;
 
 // import sequelize operator
 const sequelize = require(`sequelize`);
@@ -10,7 +11,16 @@ const operator = sequelize.Op;
 exports.getBookingData = async (request, response) => {
   await bookingModel
     .findAll({
-      include: ["room_type", "user"],
+      include: [
+        {
+          model: roomTypeModel,
+          as: "room_type",
+        },
+        {
+          model: userModel,
+          as: "user",
+        },
+      ],
     })
     .then((result) => {
       return response.json({ count: result.length, data: result });
@@ -64,47 +74,75 @@ exports.addBookingData = async (request, response) => {
     user_id: request.body.user_id,
   };
 
-  // get data room where room is available and for check the data isn't null
+  // rooms data
   let roomsData = await roomModel.findAll({
     where: {
       room_type_id: requestData.room_type_id,
-      room_is_available: true,
     },
   });
 
+  // room type data
+  let roomTypeData = await roomTypeModel.findOne({
+    where: { room_type_id: requestData.room_type_id },
+  });
+
+  //  booking data
+  let dataBooking = await roomTypeModel.findAll({
+    attributes: ["room_type_id", "room_type_name"],
+    where: { room_type_id: requestData.room_type_id },
+    include: [
+      {
+        model: roomModel,
+        as: "room",
+        attributes: ["room_id", "room_type_id"],
+        include: [
+          {
+            model: bookingDetailModel,
+            as: "booking_detail",
+            attributes: ["access_date"],
+            where: {
+              access_date: {
+                [operator.between]: [
+                  requestData.booking_check_in_date,
+                  requestData.booking_check_out_date,
+                ],
+              },
+            },
+          },
+        ],
+      },
+    ],
+  });
+
+  // get available rooms
+  let bookedRoomIds = dataBooking[0].room.map((room) => room.room_id);
+  let availableRooms = roomsData.filter((room) => !bookedRoomIds.includes(room.room_id));
+
+  // process add data room where status is available to one list
+  let roomsDataSelected = availableRooms.slice(0, requestData.booking_number_of_rooms);
+
+  //count day
+  let checkInDate = new Date(requestData.booking_check_in_date);
+  let checkOutDate = new Date(requestData.booking_check_out_date);
+  const dayTotal = Math.round(
+    (checkOutDate - checkInDate) / (1000 * 3600 * 24)
+  );
 
   // process add detail
-  if (roomsData == null || roomsData.length < requestData.booking_number_of_rooms) {
+  if (
+    roomsData == null ||
+    availableRooms.length < requestData.booking_number_of_rooms ||
+    dayTotal == 0 ||
+    roomsDataSelected == null
+  ) {
     return response.json({
-      message: "Data not found!",
+      message: "Room not available!",
     });
   } else {
     await bookingModel
       .create(requestData)
       .then(async (result) => {
-        // change status room
-
-        let roomTypeData = await roomTypeModel.findOne({
-          where: { room_type_id: requestData.room_type_id },
-        });
-
-        let roomsDataSelected = [];
-
-        // process add data room where status is available to one list
-        for (let i = 0; i < roomsData.length; i++) {
-          roomsDataSelected.push(roomsData[i]);
-          roomModel.update(
-            { room_is_available: false },
-            { where: { room_id: roomsData[i].room_id } }
-          );
-        }
-
         // process to add booking detail
-        let checkInDate = new Date(requestData.booking_check_in_date);
-        let checkOutDate = new Date(requestData.booking_check_out_date);
-        let dayTotal =
-          (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 3600 * 24);
-
         for (let i = 0; i < dayTotal; i++) {
           for (let j = 0; j < roomsDataSelected.length; j++) {
             let accessDate = new Date(checkInDate);
@@ -119,7 +157,7 @@ exports.addBookingData = async (request, response) => {
           }
         }
         return response.json({
-          data: roomsDataSelected,
+          data: result,
           statusCode: response.statusCode,
           message: "New user has been created",
         });
@@ -154,7 +192,7 @@ exports.deleteBookingData = async (request, response) => {
   for (let i = 0; i < allBookingDetailData.length; i++) {
     await roomModel.update(
       { room_is_available: true },
-      {where: { room_id: allBookingDetailData[i].room_id },}
+      { where: { room_id: allBookingDetailData[i].room_id } }
     );
   }
 

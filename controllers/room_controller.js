@@ -1,5 +1,6 @@
 const roomModel = require("../models/index").room;
 const roomTypeModel = require("../models/index").room_type;
+const bookingDetailModel = require("../models/index").booking_detail;
 
 const path = require(`path`);
 const fs = require(`fs`);
@@ -21,6 +22,107 @@ exports.getRoomData = async (request, response) => {
     });
 };
 
+exports.getAvailableRooms = async (request, response) => {
+  let checkInDate = request.body.check_in_date;
+  let checkOutDate = request.body.check_out_date;
+
+  let roomData = await roomTypeModel.findAll({
+    attributes: ["room_type_id", "room_type_name"],
+    include: [
+      {
+        model: roomModel,
+        as: "room",
+      },
+    ],
+  });
+
+  let roomBookedData = await roomTypeModel.findAll({
+    attributes: ["room_type_id", "room_type_name"],
+    include: [
+      {
+        model: roomModel,
+        as: "room",
+        include: [
+          {
+            model: bookingDetailModel,
+            as: "booking_detail",
+            attributes: ["access_date"],
+            where: {
+              access_date: {
+                [operator.between]: [checkInDate, checkOutDate],
+              },
+            },
+          },
+        ],
+      },
+    ],
+  });
+
+  // let available = []
+
+  // for (let i = 0; i < roomData.length; i++) {
+  //   roomData[i].room.forEach(room => {
+  //     let isBooked = false
+  //     roomBookedData.forEach(booked => {
+  //       booked.room.forEach(bookedRoom => {
+  //         if (room.room_id === bookedRoom.room_id) {
+  //           isBooked = true
+  //         }
+  //       })
+  //     })
+  //     if (!isBooked) {
+  //       available.push(room)
+  //     }
+  //   })
+  // }
+
+  // for (let i = 0; i < available.length; i++) {
+  //   for (let j = 0; j < roomData.length; j++) {
+  //     if(available[i].room_type_id == roomData[j].room_type_id){
+  //       roomData[j].room = available[i]
+  //     }
+  //   }
+  // }
+
+  let available = [];
+  let availableByType = [];
+
+  for (let i = 0; i < roomData.length; i++) {
+    roomData[i].room.forEach((room) => {
+      let isBooked = false;
+      roomBookedData.forEach((booked) => {
+        booked.room.forEach((bookedRoom) => {
+          if (room.room_id === bookedRoom.room_id) {
+            isBooked = true;
+          }
+        });
+      });
+      if (!isBooked) {
+        available.push(room);
+      }
+    });
+  }
+
+  for (let i = 0; i < roomData.length; i++) {
+    let roomType = {};
+    roomType.room_type_id = roomData[i].room_type_id;
+    roomType.room_type_name = roomData[i].room_type_name;
+    roomType.room = [];
+    available.forEach((room) => {
+      if (room.room_type_id === roomData[i].room_type_id) {
+        roomType.room.push(room);
+      }
+    });
+    if (roomType.room.length > 0) {
+      availableByType.push(roomType);
+    }
+  }
+
+  // console.log(availableByType);
+
+  return response.json({ roomAvailable: available, room: availableByType });
+};
+
 exports.findRoomData = async (request, response) => {
   let keyword = request.body.keyword;
 
@@ -30,7 +132,6 @@ exports.findRoomData = async (request, response) => {
       where: {
         [operator.or]: {
           room_number: { [operator.like]: `%${keyword}%` },
-          room_is_available: { [operator.like]: `%${keyword}%` },
         },
       },
     })
@@ -47,7 +148,6 @@ exports.addRoomData = async (request, response) => {
   let requestData = {
     room_number: request.body.room_number,
     room_type_id: request.body.room_type_id,
-    room_is_available: request.body.room_is_available,
   };
 
   await roomModel
@@ -76,7 +176,6 @@ exports.updateRoomData = async (request, response) => {
   let requestData = {
     room_number: request.body.room_number,
     room_type_id: request.body.room_type_id,
-    room_is_available: request.body.room_is_available,
   };
 
   roomModel

@@ -19,9 +19,6 @@ module.exports = {
           key: "room_type_id"
         }
       },
-      room_is_available: {
-        type: Sequelize.BOOLEAN,
-      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

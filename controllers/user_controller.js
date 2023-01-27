@@ -1,6 +1,6 @@
 const md5 = require("md5");
-const jwt = require(`jsonwebtoken`)
-const{validationResult} = require(`express-validator`)
+const jwt = require(`jsonwebtoken`);
+const { validationResult } = require(`express-validator`);
 const userModel = require("../models/index").user;
 
 const path = require(`path`);
@@ -42,9 +42,14 @@ exports.findUserData = async (request, response) => {
 };
 
 exports.addUserData = async (request, response) => {
-  let checkValidation = validationResult(request)
-  if(!checkValidation.isEmpty()){
-    return response.json(checkValidation.array())
+  let errorResult = validationResult(request);
+  console.log(request.body);
+  console.log(validationResult(request));
+  if (!errorResult.isEmpty()) {
+    return response.json({
+      data: request.body,
+      message: errorResult.array(),
+    });
   }
   // handle upload photo
   console.log();
@@ -52,38 +57,40 @@ exports.addUserData = async (request, response) => {
     return response.json({
       message: "Nothing to upload!",
     });
-  }
-  // request data
-  let requestData = {
-    user_name: request.body.user_name,
-    user_email: request.body.user_email,
-    user_password: md5(request.body.user_password),
-    user_role: request.body.user_role,
-    user_photo: request.file.filename,
-  };
+  } else {
+    // request data
+    let requestData = {
+      user_name: request.body.user_name,
+      user_email: request.body.user_email,
+      user_password: md5(request.body.user_password),
+      user_role: request.body.user_role,
+      user_photo: request.file.filename,
+    };
 
-  await userModel
-    .create(requestData)
-    .then((result) => {
-      return response.json({
-        statusCode: response.statusCode,
-        message: "New user has been created",
+    await userModel
+      .create(requestData)
+      .then((result) => {
+        return response.json({
+          result: result,
+          statusCode: response.statusCode,
+          message: "New user has been created",
+        });
+      })
+      .catch((error) => {
+        return response.json({
+          message: error.message,
+        });
       });
-    })
-    .catch((error) => {
-      return response.json({
-        message: error.message,
-      });
-    });
+  }
 };
 
 exports.updateUserData = async (request, response) => {
   //get user_id
   let userId = request.params.user_id;
 
-  let checkValidation = validationResult(request)
-  if(!checkValidation.isEmpty()){
-    return response.json(checkValidation.array())
+  let checkValidation = validationResult(request.body);
+  if (!checkValidation.isEmpty()) {
+    return response.json(checkValidation.array());
   }
 
   //get data for check before update
@@ -168,30 +175,30 @@ exports.deleteUserData = async (request, response) => {
     });
 };
 
-exports.authentication = async(request, response) => {
+exports.authentication = async (request, response) => {
   let requestData = {
-      user_name : request.body.user_name,
-      user_password : md5(request.body.user_password)
-  }
+    user_name: request.body.user_name,
+    user_password: md5(request.body.user_password),
+  };
 
   // validasi
-  let result = await userModel.findOne({where : requestData})
+  let result = await userModel.findOne({ where: requestData });
 
   if (result) {
-      let payload = JSON.stringify(result)
-      let secretKey = `ukk-hotel`
+    let payload = JSON.stringify(result);
+    let secretKey = `ukk-hotel`;
 
-      // generate token
-      let token = jwt.sign(payload, secretKey)
-      return response.json({
-          logged: true,
-          token: token,
-          data : result
-      })
+    // generate token
+    let token = jwt.sign(payload, secretKey);
+    return response.json({
+      logged: true,
+      token: token,
+      data: result,
+    });
   } else {
-      return response.json({
-          logged: false,
-          message : `Invalid Username or Password, Please Try Again!`
-      })
+    return response.json({
+      logged: false,
+      message: `Invalid Username or Password, Please Try Again!`,
+    });
   }
-}
+};

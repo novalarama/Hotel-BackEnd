@@ -12,6 +12,8 @@ const authorization = require("../middlewares/authorization")
 // find data room
 app.post("/find",[authorization.authorization], roomController.findRoomData)
 
+app.post("/available-room", [authorization.authorization], roomController.getAvailableRooms)
+
 // get data room
 app.get("/",[authorization.authorization], roomController.getRoomData)
 

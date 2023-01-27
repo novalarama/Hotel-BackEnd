@@ -31,7 +31,6 @@ module.exports = (sequelize, DataTypes) => {
     },
     room_number: DataTypes.STRING,
     room_type_id: DataTypes.INTEGER,
-    room_is_available: DataTypes.BOOLEAN
   }, {
     sequelize,
     modelName: 'room',
