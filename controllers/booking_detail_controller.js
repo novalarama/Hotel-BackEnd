@@ -8,12 +8,7 @@ const operator = sequelize.Op;
 
 exports.getBookingDetailData = async (request, response) => {
   await bookingDetailModel
-    .findAll({
-      // include: [
-      //   "booking",
-      //   "room",
-      // ]
-    })
+    .findAll({})
     .then((result) => {
       return response.json({ count: result.length, data: result });
     })

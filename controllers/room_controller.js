@@ -58,32 +58,6 @@ exports.getAvailableRooms = async (request, response) => {
     ],
   });
 
-  // let available = []
-
-  // for (let i = 0; i < roomData.length; i++) {
-  //   roomData[i].room.forEach(room => {
-  //     let isBooked = false
-  //     roomBookedData.forEach(booked => {
-  //       booked.room.forEach(bookedRoom => {
-  //         if (room.room_id === bookedRoom.room_id) {
-  //           isBooked = true
-  //         }
-  //       })
-  //     })
-  //     if (!isBooked) {
-  //       available.push(room)
-  //     }
-  //   })
-  // }
-
-  // for (let i = 0; i < available.length; i++) {
-  //   for (let j = 0; j < roomData.length; j++) {
-  //     if(available[i].room_type_id == roomData[j].room_type_id){
-  //       roomData[j].room = available[i]
-  //     }
-  //   }
-  // }
-
   let available = [];
   let availableByType = [];
 
@@ -117,8 +91,6 @@ exports.getAvailableRooms = async (request, response) => {
       availableByType.push(roomType);
     }
   }
-
-  // console.log(availableByType);
 
   return response.json({ roomAvailable: available, room: availableByType });
 };
