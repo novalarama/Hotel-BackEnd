@@ -1,10 +1,10 @@
+const userModel = require("../models/index").user;
 const md5 = require("md5");
 const jwt = require(`jsonwebtoken`);
-const { validationResult } = require(`express-validator`);
-const userModel = require("../models/index").user;
-
+const validator = require('validator');
 const path = require(`path`);
 const fs = require(`fs`);
+const {validationResult} = require(`express-validator`)
 
 // import sequelize operator
 const sequelize = require(`sequelize`);
@@ -42,17 +42,13 @@ exports.findUserData = async (request, response) => {
 };
 
 exports.addUserData = async (request, response) => {
-  let errorResult = validationResult(request);
-  console.log(request.body);
-  console.log(validationResult(request));
-  if (!errorResult.isEmpty()) {
-    return response.json({
-      data: request.body,
-      message: errorResult.array(),
-    });
+  let error = validationResult(request)
+
+  if(!error.isEmpty()){
+      return response.json(error.array())
   }
   // handle upload photo
-  console.log();
+  return console.log('hello');
   if (!request.file) {
     return response.json({
       message: "Nothing to upload!",

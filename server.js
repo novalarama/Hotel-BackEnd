@@ -1,10 +1,16 @@
 const express = require('express')
 const app = express()
 const cors = require('cors')
+const multer = require('multer')
 const port = 8080
+
 
 app.use(cors())
 app.use(express.static(__dirname))
+
+app.use(express.json())
+app.use(express.urlencoded({ extended: false }))
+
 
 let routes = [
     {prefix: `/room-type`, route: require(`./routes/room_type_route`)},

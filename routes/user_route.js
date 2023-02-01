@@ -1,7 +1,9 @@
 const express = require('express')
+const bodyParser = require('body-parser')
 const app = express()
 
-app.use(express.json())
+app.use(bodyParser.urlencoded({extended: false}))
+app.use(bodyParser.json())
 
 // connect the controller
 const userController = require("../controllers/user_controller")
@@ -9,19 +11,19 @@ const userController = require("../controllers/user_controller")
 //connect middleware
 const uploadImage = require("../middlewares/uploadImage")
 const authorization = require("../middlewares/authorization")
-const {validate} = require("../middlewares/userValidator")
+const validate = require("../middlewares/userValidator")
 
 // for authentication
 app.post("/auth", userController.authentication)
 
 // find data user
-app.post("/find", [authorization.authorization], userController.findUserData)
+app.post("/find", [validate.validate, authorization.authorization], userController.findUserData)
 
 // get data user
 app.get("/", [authorization.authorization], userController.getUserData)
 
 // post data user
-app.post("/", [validate, uploadImage.upload.single(`user_photo`), authorization.authorization], userController.addUserData)
+app.post("/", [validate.validate, uploadImage.upload.single(`user_photo`), authorization.authorization], userController.addUserData)
 
 //update data user
 app.put("/:user_id", [uploadImage.upload.single(`user_photo`), authorization.authorization], userController.updateUserData)
