@@ -43,12 +43,13 @@ exports.findUserData = async (request, response) => {
 
 exports.addUserData = async (request, response) => {
   let error = validationResult(request)
-
+  
   if(!error.isEmpty()){
       return response.json(error.array())
   }
+  
   // handle upload photo
-  return console.log('hello');
+  console.log();
   if (!request.file) {
     return response.json({
       message: "Nothing to upload!",

@@ -23,7 +23,7 @@ app.post("/find", [validate.validate, authorization.authorization], userControll
 app.get("/", [authorization.authorization], userController.getUserData)
 
 // post data user
-app.post("/", [validate.validate, uploadImage.upload.single(`user_photo`), authorization.authorization], userController.addUserData)
+app.post("/", [uploadImage.upload.single(`user_photo`), validate.validate, authorization.authorization], userController.addUserData)
 
 //update data user
 app.put("/:user_id", [uploadImage.upload.single(`user_photo`), authorization.authorization], userController.updateUserData)
