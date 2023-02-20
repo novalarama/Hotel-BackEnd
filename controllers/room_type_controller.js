@@ -1,4 +1,6 @@
 const roomTypeModel = require("../models/index").room_type;
+const roomPhotoModel = require("../models/index").room_photo;
+const roomFacilityModel = require("../models/index").room_facility;
 
 const path = require(`path`);
 const fs = require(`fs`);
@@ -53,6 +55,7 @@ exports.addRoomTypeData = async (request, response) => {
       return response.json({
         statusCode: response.statusCode,
         message: "New type room has been created",
+        data: result
       });
     })
     .catch();
@@ -106,6 +109,10 @@ exports.deleteRoomTypeData = async (request, response) => {
       message: "Data Not Found!",
     });
   }
+
+  await roomPhotoModel.destroy({where: {room_type_id: roomTypeId}})
+
+  await roomFacilityModel.destroy({where: {room_type_id: roomTypeId}})
 
   await roomTypeModel
     .destroy({ where: { room_type_id: roomTypeId } })

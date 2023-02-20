@@ -18,6 +18,18 @@ exports.getRoomPhotoData = async (request, response) => {
     });
 };
 
+exports.getRoomPhotoDataWthRoomTypeId = async (request, response) => {
+  let roomTypeId = request.params.room_type_id;
+  await roomPhotoModel
+    .findAll({where: {room_type_id: roomTypeId}})
+    .then((result) => {
+      return response.json({ count: result.length, data: result });
+    })
+    .catch((error) => {
+      return response.json({ message: error.message });
+    });
+};
+
 exports.addRoomPhotoData = async (request, response) => {
   // handle upload photo
   console.log();
@@ -37,7 +49,7 @@ exports.addRoomPhotoData = async (request, response) => {
     .then((result) => {
       return response.json({
         statusCode: response.statusCode,
-        message: "New room photo has been created",
+        message: "New room photo has been created"
       });
     })
     .catch((error) => {

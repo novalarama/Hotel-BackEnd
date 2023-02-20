@@ -16,6 +16,7 @@ let routes = [
     {prefix: `/room-type`, route: require(`./routes/room_type_route`)},
     {prefix: `/room`, route: require(`./routes/room_route`)},
     {prefix: `/room-photo`, route: require(`./routes/room_photo_route`)},
+    {prefix: `/room-facility`, route: require(`./routes/room_facility_route`)},
     {prefix: `/user`, route: require(`./routes/user_route`)},
     {prefix: `/booking`, route: require(`./routes/booking_route`)},
     {prefix: `/booking-detail`, route: require(`./routes/booking_detail_route`)},

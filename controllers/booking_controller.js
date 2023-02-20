@@ -184,18 +184,6 @@ exports.deleteBookingData = async (request, response) => {
     });
   }
 
-  // change status room_is_available to true
-  let allBookingDetailData = await bookingDetailModel.findAll({
-    where: { booking_id: bookingId },
-  });
-
-  for (let i = 0; i < allBookingDetailData.length; i++) {
-    await roomModel.update(
-      { room_is_available: true },
-      { where: { room_id: allBookingDetailData[i].room_id } }
-    );
-  }
-
   //delete booking detail
   await bookingDetailModel.destroy({ where: { booking_id: bookingId } });
 
