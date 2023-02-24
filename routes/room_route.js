@@ -14,6 +14,8 @@ app.post("/find",[authorization.authorization], roomController.findRoomData)
 
 app.post("/available-room", [authorization.authorization], roomController.getAvailableRooms)
 
+app.post("/booked-room", [authorization.authorization], roomController.getBookedRooms)
+
 // get data room
 app.get("/",[authorization.authorization], roomController.getRoomData)
 

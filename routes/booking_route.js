@@ -9,11 +9,10 @@ const bookingController = require("../controllers/booking_controller")
 // connect the middlewares
 const authorization = require("../middlewares/authorization")
 
-// find data room
-app.post("/find", [authorization.authorization], bookingController.findBookingData)
-
 // get data room
 app.get("/",[authorization.authorization], bookingController.getBookingData)
+
+app.put("/:booking_id",[authorization.authorization], bookingController.changeStatusBookingData)
 
 // post data room
 app.post("/",[authorization.authorization], bookingController.addBookingData)

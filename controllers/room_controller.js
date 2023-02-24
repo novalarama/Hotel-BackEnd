@@ -95,6 +95,51 @@ exports.getAvailableRooms = async (request, response) => {
   return response.json({ roomAvailable: available, room: availableByType });
 };
 
+exports.getBookedRooms = async (request, response) => {
+  let todayDate = request.body.today_date;
+
+  let unavailableRoomsData = await roomTypeModel.findAll({
+    attributes: ["room_type_id", "room_type_name"],
+    include: [
+      {
+        model: roomModel,
+        as: "room",
+        include: [
+          {
+            model: bookingDetailModel,
+            as: "booking_detail",
+            attributes: ["access_date"],
+            where: {
+              access_date: {
+                [operator.gte]: new Date(todayDate),
+                [operator.lt]: new Date(new Date(todayDate).getTime() + 24 * 60 * 60 * 1000),
+              },
+            },
+          },
+        ],
+      },
+    ],
+  });
+
+  let unavailableByType = [];
+  let totalUnavailableRooms = 0;
+
+  for (let i = 0; i < unavailableRoomsData.length; i++) {
+    let roomType = {};
+    roomType.room_type_id = unavailableRoomsData[i].room_type_id;
+    roomType.room_type_name = unavailableRoomsData[i].room_type_name;
+    roomType.room_count = unavailableRoomsData[i].room.length;
+    totalUnavailableRooms += unavailableRoomsData[i].room.length;
+    unavailableByType.push(roomType);
+  }
+
+  return response.json({
+    unavailableRoomCount: totalUnavailableRooms,
+    unavailableRoomByType: unavailableByType,
+  });
+};
+
+
 exports.findRoomData = async (request, response) => {
   let keyword = request.body.keyword;
 

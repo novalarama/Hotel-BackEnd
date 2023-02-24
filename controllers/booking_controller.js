@@ -4,13 +4,46 @@ const roomModel = require("../models/index").room;
 const roomTypeModel = require("../models/index").room_type;
 const userModel = require("../models/index").user;
 
+const { where } = require("sequelize");
 // import sequelize operator
 const sequelize = require(`sequelize`);
 const operator = sequelize.Op;
 
 exports.getBookingData = async (request, response) => {
+  let whereCondition = {};
+  let bookingName = request.query.booking_name;
+  let bookingCheckInDate = request.query.booking_check_in_date;
+
+  if (bookingName !== '' && bookingCheckInDate !== '') {
+    whereCondition = {
+      booking_name: {
+        [operator.like]: `%${bookingName}%`,
+      },
+      booking_check_in_date: {
+        [operator.gte]: new Date(bookingCheckInDate),
+        [operator.lt]: new Date(new Date(bookingCheckInDate).getTime() + 24 * 60 * 60 * 1000),
+      },
+    };
+  } else if (bookingName !== '') {
+    whereCondition = {
+      booking_name: {
+        [operator.like]: `%${bookingName}%`,
+      },
+    };
+  } else if (bookingCheckInDate !== '') {
+    whereCondition = {
+      booking_check_in_date: {
+        [operator.gte]: new Date(bookingCheckInDate),
+        [operator.lt]: new Date(new Date(bookingCheckInDate).getTime() + 24 * 60 * 60 * 1000),
+      },
+    };
+  } else {
+    whereCondition = {}
+  }
+
   await bookingModel
     .findAll({
+      where: whereCondition,
       include: [
         {
           model: roomTypeModel,
@@ -21,34 +54,6 @@ exports.getBookingData = async (request, response) => {
           as: "user",
         },
       ],
-    })
-    .then((result) => {
-      return response.json({ count: result.length, data: result });
-    })
-    .catch((error) => {
-      return response.json({ message: error.message });
-    });
-};
-
-exports.findBookingData = async (request, response) => {
-  let keyword = request.body.keyword;
-  let bookingCheckInDate = request.body.booking_check_in_date;
-  let bookingCheckOutDate = request.body.booking_check_out_date;
-
-  await bookingModel
-    .findAll({
-      include: ["room_type", "user"],
-      where: {
-        [operator.or]: {
-          booking_number: { [operator.like]: `%${keyword}%` },
-          booking_name: { [operator.like]: `%${keyword}%` },
-          booking_email: { [operator.like]: `%${keyword}%` },
-          booking_guest_name: { [operator.like]: `%${keyword}%` },
-        },
-        booking_check_in_date: {
-          [operator.between]: [bookingCheckInDate, bookingCheckOutDate],
-        },
-      },
     })
     .then((result) => {
       return response.json({ count: result.length, data: result });
@@ -116,10 +121,15 @@ exports.addBookingData = async (request, response) => {
 
   // get available rooms
   let bookedRoomIds = dataBooking[0].room.map((room) => room.room_id);
-  let availableRooms = roomsData.filter((room) => !bookedRoomIds.includes(room.room_id));
+  let availableRooms = roomsData.filter(
+    (room) => !bookedRoomIds.includes(room.room_id)
+  );
 
   // process add data room where status is available to one list
-  let roomsDataSelected = availableRooms.slice(0, requestData.booking_number_of_rooms);
+  let roomsDataSelected = availableRooms.slice(
+    0,
+    requestData.booking_number_of_rooms
+  );
 
   //count day
   let checkInDate = new Date(requestData.booking_check_in_date);
@@ -168,6 +178,38 @@ exports.addBookingData = async (request, response) => {
         });
       });
   }
+};
+
+exports.changeStatusBookingData = async (request, response) => {
+  let bookingId = request.params.booking_id;
+
+  //get data booking for check before update
+  let BookingData = await bookingModel.findOne({
+    where: { booking_id: bookingId },
+  });
+  if (BookingData == null) {
+    return response.json({
+      message: "Data Not Found!",
+    });
+  }
+
+  let requestData = {
+    booking_status: request.body.booking_status,
+  };
+
+  bookingModel
+    .update(requestData, { where: { booking_id: bookingId } })
+    .then(() => {
+      return response.json({
+        statusCode: response.statusCode,
+        message: "Data status has been updated",
+      });
+    })
+    .catch((error) => {
+      return response.json({
+        message: error.message,
+      });
+    });
 };
 
 exports.deleteBookingData = async (request, response) => {

@@ -1,10 +1,10 @@
 const userModel = require("../models/index").user;
 const md5 = require("md5");
 const jwt = require(`jsonwebtoken`);
-const validator = require('validator');
+const validator = require("validator");
 const path = require(`path`);
 const fs = require(`fs`);
-const {validationResult} = require(`express-validator`)
+const { validationResult } = require(`express-validator`);
 
 // import sequelize operator
 const sequelize = require(`sequelize`);
@@ -42,12 +42,12 @@ exports.findUserData = async (request, response) => {
 };
 
 exports.addUserData = async (request, response) => {
-  let error = validationResult(request)
-  
-  if(!error.isEmpty()){
-      return response.json(error.array())
+  let error = validationResult(request);
+
+  if (!error.isEmpty()) {
+    return response.json(error.array());
   }
-  
+
   // handle upload photo
   console.log();
   if (!request.file) {
@@ -100,38 +100,72 @@ exports.updateUserData = async (request, response) => {
     });
   }
 
-  let requestData = {
-    user_name: request.body.user_name,
-    user_email: request.body.user_email,
-    user_password: md5(request.body.user_password),
-    user_role: request.body.user_role,
-  };
+  if (request.body.user_password != null) {
+    let requestData = {
+      user_name: request.body.user_name,
+      user_email: request.body.user_email,
+      user_password: md5(request.body.user_password),
+      user_role: request.body.user_role,
+    };
 
-  if (request.file) {
-    let dataUser = await userModel.findOne({ where: { user_id: userId } });
-    let oldPhotoPath = dataUser.user_photo;
+    if (request.file) {
+      let dataUser = await userModel.findOne({ where: { user_id: userId } });
+      let oldPhotoPath = dataUser.user_photo;
 
-    //delete photo
-    let photoPath = path.join(__dirname, "../assets/image", oldPhotoPath);
-    fs.unlink(photoPath, (error) => console.log(error));
+      //delete photo
+      let photoPath = path.join(__dirname, "../assets/image", oldPhotoPath);
+      fs.unlink(photoPath, (error) => console.log(error));
 
-    // add new data photo
-    requestData.user_photo = request.file.filename;
+      // add new data photo
+      requestData.user_photo = request.file.filename;
+    }
+
+    await userModel
+      .update(requestData, { where: { user_id: userId } })
+      .then((result) => {
+        return response.json({
+          statusCode: response.statusCode,
+          message: "Data user has been updated",
+        });
+      })
+      .catch((error) => {
+        return response.json({
+          message: error.message,
+        });
+      });
+  } else {
+    let requestData = {
+      user_name: request.body.user_name,
+      user_email: request.body.user_email,
+      user_role: request.body.user_role,
+    };
+
+    if (request.file) {
+      let dataUser = await userModel.findOne({ where: { user_id: userId } });
+      let oldPhotoPath = dataUser.user_photo;
+
+      //delete photo
+      let photoPath = path.join(__dirname, "../assets/image", oldPhotoPath);
+      fs.unlink(photoPath, (error) => console.log(error));
+
+      // add new data photo
+      requestData.user_photo = request.file.filename;
+    }
+
+    await userModel
+      .update(requestData, { where: { user_id: userId } })
+      .then((result) => {
+        return response.json({
+          statusCode: response.statusCode,
+          message: "Data user has been updated",
+        });
+      })
+      .catch((error) => {
+        return response.json({
+          message: error.message,
+        });
+      });
   }
-
-  await userModel
-    .update(requestData, { where: { user_id: userId } })
-    .then((result) => {
-      return response.json({
-        statusCode: response.statusCode,
-        message: "Data user has been updated",
-      });
-    })
-    .catch((error) => {
-      return response.json({
-        message: error.message,
-      });
-    });
 };
 
 exports.deleteUserData = async (request, response) => {
@@ -191,6 +225,7 @@ exports.authentication = async (request, response) => {
       logged: true,
       token: token,
       data: result,
+      user_role: result.user_role,
     });
   } else {
     return response.json({
